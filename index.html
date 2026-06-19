@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>สไลด์โชว์</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a0a;--s:#141414;--s2:#1e1e1e;--b:rgba(255,255,255,.1);--t:#f0f0f0;--m:#888;--acc:#4F8EF7;--r:12px}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:480px;margin:0 auto}
+/* header */
+.hdr{padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between}
+.hdr-title{font-size:17px;font-weight:500}
+.mode-toggle{display:flex;background:var(--s2);border-radius:20px;padding:3px;gap:2px}
+.mode-btn{padding:5px 14px;border-radius:16px;border:none;background:none;color:var(--m);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s}
+.mode-btn.active{background:var(--acc);color:#fff}
+/* upload zone */
+.upload-zone{margin:16px;border:1.5px dashed var(--b);border-radius:var(--r);padding:28px 16px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--acc)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:100px}
+.upload-icon{font-size:32px;margin-bottom:8px;color:var(--m)}
+.upload-text{font-size:14px;font-weight:500;margin-bottom:4px}
+.upload-sub{font-size:12px;color:var(--m)}
+/* viewer */
+.viewer{position:relative;margin:0 16px;background:var(--s);border-radius:var(--r);overflow:hidden;aspect-ratio:16/9}
+.viewer.portrait{aspect-ratio:9/16}
+.viewer-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain;width:100%;height:100%}
+.viewer video{width:100%;height:100%;object-fit:contain;background:#000}
+.viewer-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--m);gap:8px;font-size:13px}
+/* nav overlay */
+.nav-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.nav-btn{pointer-events:all;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);border:none;color:#fff;cursor:pointer;border-radius:50%;margin:0 8px;font-size:20px;transition:opacity .15s}
+.nav-btn:disabled{opacity:.2;cursor:default}
+/* counter */
+.counter{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:3px 10px;border-radius:10px;pointer-events:none}
+/* controls bar */
+.controls{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px}
+.ctrl-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--b);background:var(--s2);color:var(--t);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.ctrl-btn:active{transform:scale(.93)}
+.ctrl-btn.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.play-btn{width:56px;height:56px;font-size:22px;background:var(--acc);border:none;color:#fff}
+/* speed */
+.speed-row{display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px 8px;font-size:12px;color:var(--m)}
+.speed-row input{width:120px;accent-color:var(--acc)}
+.speed-val{min-width:32px;text-align:center;color:var(--t);font-weight:500}
+/* thumbnails */
+.thumb-wrap{padding:12px 16px 8px;overflow-x:auto;display:flex;gap:8px;scrollbar-width:none}
+.thumb-wrap::-webkit-scrollbar{display:none}
+.thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;flex-shrink:0;transition:border-color .15s;background:var(--s2)}
+.thumb.active{border-color:var(--acc)}
+.thumb-video{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:border-color .15s}
+.thumb-video.active{border-color:var(--acc)}
+.thumb-video video{width:100%;height:100%;object-fit:cover}
+.thumb-video::after{content:'▶';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:rgba(0,0,0,.35)}
+/* stats */
+.stats{display:flex;gap:8px;padding:0 16px 12px}
+.stat{flex:1;background:var(--s2);border-radius:8px;padding:8px 10px;text-align:center}
+.stat-n{font-size:18px;font-weight:500;font-variant-numeric:tabular-nums}
+.stat-l{font-size:11px;color:var(--m);margin-top:2px}
+/* remove btn */
+.remove-btn{position:absolute;top:8px;right:8px;width:30px;height:30px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.viewer:hover .remove-btn{display:flex}
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:#222;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;transition:transform .25s;z-index:999;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+/* empty state */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--m);padding:32px;text-align:center}
+.empty-state .big-icon{font-size:48px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-title">สไลด์โชว์</div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-photo" onclick="setMode('photo')">รูปภาพ</button>
+      <button class="mode-btn" id="btn-video" onclick="setMode('video')">วิดีโอ</button>
+    </div>
+  </div>
+
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
+    <div class="upload-icon">⬆</div>
+    <div class="upload-text" id="upload-text">เลือกรูปภาพ</div>
+    <div class="upload-sub" id="upload-sub">รองรับ JPG, PNG, GIF, WebP</div>
+  </div>
+
+  <div class="viewer" id="viewer" style="display:none">
+    <div class="viewer-inner" id="viewer-inner">
+      <div class="viewer-empty">ยังไม่มีไฟล์</div>
+    </div>
+    <div class="nav-overlay">
+      <button class="nav-btn" id="btn-prev" onclick="prev()" aria-label="ก่อนหน้า">‹</button>
+      <button class="nav-btn" id="btn-next" onclick="next()" aria-label="ถัดไป">›</button>
+    </div>
+    <div class="counter" id="counter" style="display:none">1 / 1</div>
+    <button class="remove-btn" onclick="removeCurrent()" aria-label="ลบ">✕</button>
+  </div>
+
+  <div class="controls" id="controls" style="display:none">
+    <button class="ctrl-btn" onclick="first()" title="ไปต้น" aria-label="ต้น">⏮</button>
+    <button class="ctrl-btn active" id="btn-play" onclick="togglePlay()" aria-label="เล่น/หยุด">▶</button>
+    <button class="ctrl-btn" onclick="last()" title="ไปท้าย" aria-label="ท้าย">⏭</button>
+    <button class="ctrl-btn" id="btn-loop" onclick="toggleLoop()" title="วนซ้ำ" aria-label="วนซ้ำ">↻</button>
+    <button class="ctrl-btn" id="btn-shuffle" onclick="toggleShuffle()" title="สุ่ม" aria-label="สุ่ม">⇄</button>
+  </div>
+
+  <div class="speed-row" id="speed-row" style="display:none">
+    <span>ช้า</span>
+    <input type="range" min="1" max="10" value="3" step="1" id="speed-slider" oninput="setSpeed(this.value)">
+    <span>เร็ว</span>
+    <span class="speed-val" id="speed-val">3 วิ</span>
+  </div>
+
+  <div class="thumb-wrap" id="thumb-wrap" style="display:none"></div>
+
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat"><div class="stat-n" id="st-count">0</div><div class="stat-l">ไฟล์ทั้งหมด</div></div>
+    <div class="stat"><div class="stat-n" id="st-idx">—</div><div class="stat-l">กำลังดู</div></div>
+    <div class="stat"><div class="stat-n" id="st-mode">รูป</div><div class="stat-l">โหมด</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let mode='photo', items=[], idx=0, playing=false, looping=true, shuffle=false, timer=null, speed=3000;
+
+const $ = id => document.getElementById(id);
+
+function setMode(m){
+  mode = m;
+  items = [];
+  idx = 0;
+  stopPlay();
+  $('btn-photo').classList.toggle('active', m==='photo');
+  $('btn-video').classList.toggle('active', m==='video');
+  const fi = $('file-input');
+  fi.accept = m==='photo' ? 'image/*' : 'video/*';
+  $('upload-text').textContent = m==='photo' ? 'เลือกรูปภาพ' : 'เลือกวิดีโอ';
+  $('upload-sub').textContent = m==='photo' ? 'รองรับ JPG, PNG, GIF, WebP' : 'รองรับ MP4, MOV, WebM';
+  $('st-mode').textContent = m==='photo' ? 'รูป' : 'วิดีโอ';
+  $('speed-row').style.display = m==='photo' ? 'flex' : 'none';
+  updateUI();
+}
+
+function handleFiles(files){
+  const arr = Array.from(files);
+  if(!arr.length) return;
+  let loaded=0;
+  arr.forEach(f=>{
+    const url = URL.createObjectURL(f);
+    items.push({url, name:f.name, type:f.type});
+    loaded++;
+    if(loaded===arr.length){
+      idx = items.length - arr.length;
+      updateUI();
+      showToast(`เพิ่ม ${arr.length} ไฟล์`);
+    }
+  });
+}
+
+function updateUI(){
+  const has = items.length > 0;
+  $('viewer').style.display = has ? 'block' : 'none';
+  $('controls').style.display = has ? 'flex' : 'none';
+  $('speed-row').style.display = has && mode==='photo' ? 'flex' : 'none';
+  $('thumb-wrap').style.display = has ? 'flex' : 'none';
+  $('stats').style.display = has ? 'flex' : 'none';
+  $('counter').style.display = has && items.length>1 ? 'flex' : 'none';
+  if(has) render();
+  updateThumbs();
+  $('st-count').textContent = items.length;
+}
+
+function render(){
+  if(!items.length) return;
+  const item = items[idx];
+  const vi = $('viewer-inner');
+  if(mode==='photo'){
+    vi.innerHTML = `<img src="${item.url}" alt="${item.name}" loading="lazy">`;
+  } else {
+    vi.innerHTML = `<video src="${item.url}" controls playsinline preload="metadata"></video>`;
+  }
+  $('counter').textContent = `${idx+1} / ${items.length}`;
+  $('btn-prev').disabled = idx===0 && !looping;
+  $('btn-next').disabled = idx===items.length-1 && !looping;
+  $('st-idx').textContent = idx+1;
+  document.querySelectorAll('.thumb,.thumb-video').forEach((t,i)=>{
+    t.classList.toggle('active', i===idx);
+    if(i===idx) t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  });
+}
+
+function updateThumbs(){
+  const tw = $('thumb-wrap');
+  tw.innerHTML='';
+  items.forEach((item,i)=>{
+    if(mode==='photo'){
+      const img = document.createElement('img');
+      img.src = item.url;
+      img.className = 'thumb' + (i===idx?' active':'');
+      img.onclick = ()=>{ idx=i; render(); };
+      tw.appendChild(img);
+    } else {
+      const div = document.createElement('div');
+      div.className = 'thumb-video' + (i===idx?' active':'');
+      div.innerHTML = `<video src="${item.url}" preload="metadata"></video>`;
+      div.onclick = ()=>{ idx=i; render(); };
+      tw.appendChild(div);
+    }
+  });
+}
+
+function prev(){
+  if(looping) idx = (idx-1+items.length)%items.length;
+  else idx = Math.max(0,idx-1);
+  render();
+}
+function next(){
+  if(shuffle){ idx=Math.floor(Math.random()*items.length); render(); return; }
+  if(looping) idx = (idx+1)%items.length;
+  else { idx = Math.min(items.length-1,idx+1); if(idx===items.length-1) stopPlay(); }
+  render();
+}
+function first(){ idx=0; render(); }
+function last(){ idx=items.length-1; render(); }
+
+function togglePlay(){
+  playing ? stopPlay() : startPlay();
+}
+function startPlay(){
+  if(!items.length||mode==='video') return;
+  playing=true;
+  $('btn-play').textContent='⏸';
+  $('btn-play').classList.add('active');
+  timer = setInterval(next, speed);
+}
+function stopPlay(){
+  playing=false;
+  clearInterval(timer);
+  $('btn-play').textContent='▶';
+  $('btn-play').classList.remove('active');
+}
+function toggleLoop(){
+  looping=!looping;
+  $('btn-loop').classList.toggle('active',looping);
+  showToast(looping?'วนซ้ำ: เปิด':'วนซ้ำ: ปิด');
+}
+function toggleShuffle(){
+  shuffle=!shuffle;
+  $('btn-shuffle').classList.toggle('active',shuffle);
+  showToast(shuffle?'สุ่ม: เปิด':'สุ่ม: ปิด');
+}
+function setSpeed(v){
+  speed = v*1000;
+  $('speed-val').textContent = v+' วิ';
+  if(playing){ stopPlay(); startPlay(); }
+}
+function removeCurrent(){
+  if(!items.length) return;
+  URL.revokeObjectURL(items[idx].url);
+  items.splice(idx,1);
+  if(idx>=items.length) idx=Math.max(0,items.length-1);
+  if(playing) stopPlay();
+  updateUI();
+  showToast('ลบแล้ว');
+}
+
+let toastTimer;
+function showToast(msg){
+  const t=$('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+const uz=$('upload-zone');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag')});
+uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');handleFiles(e.dataTransfer.files)});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') next();
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp') prev();
+  else if(e.key===' ') { e.preventDefault(); togglePlay(); }
+});
+
+let touchX=0;
+document.addEventListener('touchstart',e=>touchX=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50){ dx<0?next():prev(); }
+},{passive:true});
+</script>
+</body>
+</html>
